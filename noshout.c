@@ -12,6 +12,8 @@ static pa_sink_input_info *sink_input_info = NULL;
 static void volume_success(pa_context *c, int success, void *userdata)
 {
 	printf("Volume success: %i\n", success);
+	if (!success)
+		sink_input_info = NULL;
 }
 
 static void set_volume(pa_sink_input_info *info, pa_volume_t volume) {
@@ -49,14 +51,15 @@ static void pa_list_sink_input_callback(pa_context *c, const pa_sink_input_info 
 	if (eol) {
 		return;
 	}
-	if (strstr(info->name, "Tel")) {
+	if (strstr(info->name, "Playback Stream")) {
 		printf("Sink Input Index: %u\n", info->index);
 		printf("  Name: %s\n", info->name);
 		printf("  Volume: %u\n", info->volume.values[0]);
 		size_t s = sizeof(*info);
 		sink_input_info = malloc(s);
 		memcpy(sink_input_info, info, s); // Сохраняем последний найденный sink input
-	}
+	} else if (0)
+		printf("  Irrelevant Name: %s\n", info->name);
 }
 
 static void context_state_callback(pa_context *c, void *userdata) {
