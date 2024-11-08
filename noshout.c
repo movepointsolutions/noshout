@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <pulse/pulseaudio.h>
 
+static const pa_volume_t target_volume = PA_VOLUME_NORM / 1.5;
 static pa_mainloop *mainloop;
 static pa_context *context;
 static pa_sink_input_info *sink_input_info = NULL;
@@ -26,20 +27,19 @@ static void set_volume(pa_sink_input_info *info, pa_volume_t volume) {
 }
 
 void noshout(pa_sink_input_info *info) {
-	const pa_volume_t target_volume = PA_VOLUME_NORM / 1.5;
 	static pa_volume_t current_volume = 0;
 	static int increasing = 1;
 
 	// Плавное изменение громкости
 	if (increasing) {
 		if (current_volume < target_volume) {
-			current_volume += PA_VOLUME_NORM / 100; // Увеличиваем громкость
+			current_volume += PA_VOLUME_NORM / 30; // Увеличиваем громкость
 		} else {
 			increasing = 0; // Достигли максимума, начинаем уменьшать
 		}
 	} else {
 		if (current_volume > 0) {
-			current_volume -= PA_VOLUME_NORM / 100; // Уменьшаем громкость
+			current_volume -= PA_VOLUME_NORM / 30; // Уменьшаем громкость
 		} else {
 			increasing = 1; // Достигли минимума, начинаем увеличивать
 		}
@@ -65,6 +65,7 @@ static void pa_list_sink_input_callback(pa_context *c, const pa_sink_input_info 
 static void context_state_callback(pa_context *c, void *userdata) {
 	if (pa_context_get_state(c) == PA_CONTEXT_READY) {
 		printf("Connected to PulseAudio.\n");
+		printf("Target volume: %i\n", target_volume);
 		// Получение списка sink inputs
 		pa_context_get_sink_input_info_list(c, (pa_sink_input_info_cb_t)pa_list_sink_input_callback, NULL);
 	}
@@ -96,7 +97,7 @@ int main(int argc, char *argv[]) {
 		if (sink_input_info) 
 			noshout(sink_input_info);
 		pa_mainloop_iterate(mainloop, 0, NULL);
-		usleep(100000); // Пауза 0.1 секунды
+		usleep(10000); // Пауза 0.1 секунды
 		pa_context_get_sink_input_info_list(context, (pa_sink_input_info_cb_t)pa_list_sink_input_callback, NULL);
 		pa_mainloop_iterate(mainloop, 0, NULL);
 	}
